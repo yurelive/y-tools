@@ -1,0 +1,35 @@
+[project]
+name = "y-tools"
+version = "0.1.0"
+description = "Ferramentas pessoais em Python, com notebooks para explorar cada uma"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+  "python-dotenv",
+]
+
+[project.optional-dependencies]
+transcricao = [
+  "faster-whisper>=1.1",
+  # ! av 19 removeu `metadata_errors` de av.open, ainda usado pelo faster-whisper 1.2.x
+  "av<19",
+]
+notebooks = [
+  "ipykernel",
+  "ipywidgets",
+  "pandas",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.isort]
+profile = "black"

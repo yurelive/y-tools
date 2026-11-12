@@ -1,0 +1,78 @@
+# .env
+.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+.cache/
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# pyenv
+.python-version
+
+# PyCharm
+.idea/
+
+# VS Code
+*.code-workspace
+
+# Arquivos temporários do Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dados, saídas e logs do projeto (podem conter conteúdo pessoal)
+data/*
+!data/.gitkeep
+output/*
+!output/.gitkeep
+logs/

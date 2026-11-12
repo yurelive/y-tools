@@ -1,0 +1,179 @@
+{
+  //# General
+  "window.autoDetectColorScheme": true,
+  "window.zoomLevel": 0,
+  //# Search
+  "search.exclude": {
+    ".git": true,
+    "build": true,
+    "dist": true,
+    "**/venv": true,
+    "**/.venv": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/*.egg-info": true
+  },
+  //# Editor Settings
+  "editor.fontFamily": "JetBrains Mono",
+  "editor.fontSize": 12,
+  "editor.rulers": [
+    88,
+    120
+  ],
+  "editor.insertSpaces": true,
+  "editor.tabSize": 4,
+  "editor.suggestSelection": "first",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.markdownlint": "explicit"
+  },
+  //# Terminal Settings
+  "terminal.integrated.fontSize": 12,
+  "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font",
+  "terminal.integrated.scrollback": 1000,
+  //# Workbench Settings
+  "breadcrumbs.enabled": true,
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.productIconTheme": "fluent-icons",
+  "workbench.editor.labelFormat": "short",
+  "workbench.preferredLightColorTheme": "Blueprint",
+  "workbench.preferredDarkColorTheme": "Blueprint",
+  "workbench.activityBar.location": "top",
+  //# File Settings
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.watcherExclude": {
+    "**/venv": true,
+    "**/.venv": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true
+  },
+  //# Python Settings
+  "python.terminal.activateEnvironment": true,
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.typeCheckingMode": "basic",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll.pylint": "explicit"
+    },
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.rulers": [
+      88,
+      120
+    ],
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 88
+  },
+  "[markdown]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  //# Git Settings
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "text": "Use conventional commit message format."
+    },
+    {
+      "text": "Use imperative mood in the subject line [imperative-mood]"
+    },
+    {
+      "text": "header must not be longer than 150 characters [header-max-length]"
+    },
+    {
+      "text": "body's lines must not be longer than 250 characters [body-max-line-length]"
+    }
+  ],
+  //# Better Comments
+  "better-comments.multilineComments": true,
+  "better-comments.highlightPlainText": false,
+  "better-comments.tags": [
+    {
+      "tag": "##",
+      "color": "#3498DB",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    },
+    {
+      "tag": "#!",
+      "color": "#FF2D00",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    },
+    {
+      "tag": "!",
+      "color": "#FF2D00",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": "?",
+      "color": "#3498DB",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": "//",
+      "color": "#474747",
+      "strikethrough": true,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": "todo",
+      "color": "#FF8C00",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": "-",
+      "color": "#FF8C00",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": "*",
+      "color": "#98C379",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    }
+  ],
+}

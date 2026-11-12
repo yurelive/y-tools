@@ -1,0 +1,22 @@
+{
+  "recommendations": [
+    "pkief.material-icon-theme",
+    "miguelsolorio.fluent-icons",
+    "mhutchie.git-graph",
+    "giladgray.theme-blueprint",
+    "esbenp.prettier-vscode",
+    "davidanson.vscode-markdownlint",
+    "editorconfig.editorconfig",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+    "ms-python.pylint",
+    "ms-python.isort",
+    "ms-python.flake8",
+    "ms-python.debugpy",
+    "ms-python.vscode-python-envs",
+    "kevinrose.vsc-python-indent",
+    "njpwerner.autodocstring",
+    "njqdev.vscode-python-typehint",
+    "ms-vscode.powershell"
+  ]
+}

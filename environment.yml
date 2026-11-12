@@ -1,0 +1,11 @@
+name: y-tools
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      # pacote em modo editável, com as dependências de todas as tools e dos notebooks
+      - -e .[transcricao,notebooks]
+      - -r requirements-dev.txt
