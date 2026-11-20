@@ -8,7 +8,7 @@ Uso rápido:
     scanner = Scanner()
     analise = Analise()
     analise.adicionar(scanner.escanear())
-    print(analise.melhor_24(), analise.melhor_5())
+    print(analise.melhores_24(), analise.melhores_5())  # mais de um quando empatam
 
     resultado = monitorar(minutos=30, intervalo=60)
     print(resultado.relatorio)
@@ -25,6 +25,7 @@ from .analise import (
     formatar_relatorio,
     interfere_5,
     interfere_24,
+    juntar,
     parsear_meus_canais,
 )
 from .coleta import (
@@ -67,6 +68,7 @@ __all__ = [
     "formatar_relatorio",
     "interfere_24",
     "interfere_5",
+    "juntar",
     "ler_profiler",
     "manter_acordado",
     "monitorar",

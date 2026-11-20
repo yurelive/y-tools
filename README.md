@@ -210,7 +210,7 @@ from y_tools.wifi import Analise, Scanner, monitorar
 scanner = Scanner()
 analise = Analise()
 analise.adicionar(scanner.escanear())
-print(analise.melhor_24(), analise.melhor_5())
+print(analise.melhores_24(), analise.melhores_5())  # mais de um quando empatam
 
 resultado = monitorar(minutos=30, intervalo=60)
 print(resultado.relatorio)

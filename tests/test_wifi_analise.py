@@ -7,6 +7,7 @@ from y_tools.wifi import (
     canais_ocupados_5,
     formatar_relatorio,
     interfere_24,
+    juntar,
     parsear_meus_canais,
 )
 
@@ -92,6 +93,7 @@ def test_melhor_prioriza_vizinhos_fortes():
     # * canal 1 tem mais redes, mas todas fracas; o 11 tem uma forte
     analise.adicionar([r24(1, rssi=-88), r24(1, rssi=-88), r24(6, rssi=-70), r24(11, rssi=-70)])
 
+    assert analise.melhores_24() == [1]
     assert analise.melhor_24() == 1
 
 
@@ -99,8 +101,30 @@ def test_melhor_5_evita_dfs_por_padrao():
     analise = Analise()
     analise.adicionar([r5(36), r5(149)])
 
-    assert analise.melhor_5() in {"36-48", "149-161"}
-    assert "DFS" in analise.melhor_5(incluir_dfs=True)
+    assert analise.melhores_5() == ["36-48", "149-161"]
+    assert analise.melhor_5() == "36-48"
+    assert all("DFS" in b for b in analise.melhores_5(incluir_dfs=True))
+
+
+def test_empate_desfeito_pelo_total():
+    analise = Analise()
+    # * mesma quantidade de fortes (zero), mas o 36-48 tem mais redes fracas
+    analise.adicionar([r5(36), r5(36), r5(149)])
+
+    assert analise.melhores_5() == ["149-161"]
+
+
+@pytest.mark.parametrize(
+    "itens, conector, esperado",
+    [
+        ([], "e", ""),
+        ([11], "e", "11"),
+        ([1, 11], "ou", "1 ou 11"),
+        ([1, 6, 11], "e", "1, 6 e 11"),
+    ],
+)
+def test_juntar(itens, conector, esperado):
+    assert juntar(itens, conector) == esperado
 
 
 def test_sem_scans_nao_divide_por_zero():
@@ -118,7 +142,8 @@ def test_formatar_relatorio():
     assert "1 scans em ~30 min" in texto
     assert "Conectado em: canal 36 (5 GHz, 80 MHz, sinal -41 dBm)" in texto
     assert "2.4 GHz canal 11 (-40 dBm)" in texto
-    assert "--> Melhor: canal 1" in texto
+    # * só o canal 6 tem vizinha: 1 e 11 empatam; no 5 GHz o 36-48 está ocupado
+    assert "--> Empate: canais 1 e 11 (qualquer um serve)" in texto
     assert "--> Melhor sem DFS: bloco 149-161" in texto
     assert "extra `wifi`" in texto
 
@@ -177,6 +202,7 @@ def test_relatorio_agrupa_sinais_e_avisa_banda_sem_canal():
     texto = formatar_relatorio(analise, "fake", 1)
 
     assert "Canais do seu roteador: 5 GHz canal 149" in texto
+    assert "--> Empate sem DFS: blocos 36-48 e 149-161 (qualquer um serve)" in texto
     assert "5 GHz canal 149 (-45 a -37 dBm)" in texto
     assert "2.4 GHz sem canal conhecido" in texto
     assert "5 GHz sem canal conhecido" not in texto

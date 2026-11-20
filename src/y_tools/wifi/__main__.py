@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 
 from ..logger import setup_logger
 from ..paths import OUTPUT_DIR
-from .analise import FORTE_DBM, PROPRIO_DBM, parsear_meus_canais
+from .analise import FORTE_DBM, PROPRIO_DBM, juntar, parsear_meus_canais
 from .coleta import LOGGER_NAME, Scanner
 from .monitor import (
     INTERVALO_PADRAO,
@@ -132,7 +132,8 @@ def main(argv: list[str] | None = None) -> int:
         analise = resultado.analise
         notificar(
             "Scan Wi-Fi terminou",
-            f"2.4 GHz: canal {analise.melhor_24()} | 5 GHz: bloco {analise.melhor_5()}",
+            f"2.4 GHz: canal {juntar(analise.melhores_24(), 'ou')} | "
+            f"5 GHz: bloco {juntar(analise.melhores_5(), 'ou')}",
         )
 
     return 0

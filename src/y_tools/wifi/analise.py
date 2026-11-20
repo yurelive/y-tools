@@ -257,20 +257,43 @@ class Analise:
 
         return [self._media(nome, nome) for nome in BLOCOS_5]
 
+    def melhores_24(self) -> list[int]:
+        """
+        Canais de 2.4 GHz menos congestionados (desempate pelo total de vizinhas).
+
+        Returns:
+            Um canal, ou mais de um quando empatam, na ordem de `CANAIS_24`.
+        """
+
+        return [int(c.nome) for c in _empatados(self.canais_24())]
+
     def melhor_24(self) -> int:
         """
-        Canal de 2.4 GHz menos congestionado (desempate pelo total de vizinhas).
+        Canal de 2.4 GHz menos congestionado. Em empate, o primeiro (ver `melhores_24`).
 
         Returns:
             1, 6 ou 11.
         """
 
-        melhor = min(self.canais_24(), key=lambda c: (c.fortes, c.media))
-        return int(melhor.nome)
+        return self.melhores_24()[0]
+
+    def melhores_5(self, incluir_dfs: bool = False) -> list[str]:
+        """
+        Blocos de 5 GHz menos congestionados (desempate pelo total de vizinhas).
+
+        Args:
+            incluir_dfs: `True` considera também os blocos DFS.
+
+        Returns:
+            Um bloco, ou mais de um quando empatam, na ordem de `BLOCOS_5`.
+        """
+
+        candidatos = [b for b in self.blocos_5() if incluir_dfs or "DFS" not in b.nome]
+        return [b.nome for b in _empatados(candidatos)]
 
     def melhor_5(self, incluir_dfs: bool = False) -> str:
         """
-        Bloco de 5 GHz menos congestionado.
+        Bloco de 5 GHz menos congestionado. Em empate, o primeiro (ver `melhores_5`).
 
         Args:
             incluir_dfs: `True` considera também os blocos DFS.
@@ -279,8 +302,49 @@ class Analise:
             Nome do bloco (chave de `BLOCOS_5`).
         """
 
-        candidatos = [b for b in self.blocos_5() if incluir_dfs or "DFS" not in b.nome]
-        return min(candidatos, key=lambda b: (b.fortes, b.media)).nome
+        return self.melhores_5(incluir_dfs)[0]
+
+
+def _empatados(itens: list[Congestionamento]) -> list[Congestionamento]:
+    """
+    Itens com o menor congestionamento: primeiro vizinhas fortes, depois o total.
+
+    * As médias de uma mesma análise dividem pelo mesmo número de scans, então
+      somas iguais dão floats iguais e a comparação exata é segura.
+    """
+
+    def chave(c: Congestionamento) -> tuple[float, float]:
+        return (c.fortes, c.media)
+
+    menor = min(map(chave, itens))
+    return [c for c in itens if chave(c) == menor]
+
+
+def juntar(itens: Iterable[object], conector: str = "e") -> str:
+    """
+    Junta itens em texto: `1`, `1 e 11`, `1, 6 e 11`.
+
+    Args:
+        itens: valores a juntar.
+        conector: palavra antes do último item (`"e"`, `"ou"`).
+
+    Returns:
+        Texto com os itens.
+    """
+
+    textos = [str(i) for i in itens]
+    if len(textos) <= 1:
+        return "".join(textos)
+    return f"{', '.join(textos[:-1])} {conector} {textos[-1]}"
+
+
+def _sugestao(rotulo: str, singular: str, plural: str, itens: list[object]) -> str:
+    """Linha final de uma seção: `--> Melhor: canal 11` ou `--> Empate: canais 1 e 11 ...`."""
+
+    if len(itens) == 1:
+        return f"--> {rotulo}: {singular} {itens[0]}"
+    rotulo = rotulo.replace("Melhor", "Empate")
+    return f"--> {rotulo}: {plural} {juntar(itens)} (qualquer um serve)"
 
 
 def _faixa(banda: str, canal: int, sinais: list[int]) -> str:
@@ -343,12 +407,12 @@ def formatar_relatorio(
     linhas += ["", "=== 2.4 GHz: média de redes vizinhas interferindo ==="]
     for c in analise.canais_24():
         linhas.append(f"Canal {c.nome:>2}: {c.media:5.1f}   (fortes: {c.fortes:.1f})")
-    linhas.append(f"--> Melhor: canal {analise.melhor_24()}")
+    linhas.append(_sugestao("Melhor", "canal", "canais", analise.melhores_24()))
 
     linhas += ["", "=== 5 GHz: média de redes vizinhas por bloco de 80 MHz ==="]
     for b in analise.blocos_5():
         linhas.append(f"{b.nome:>14}: {b.media:5.1f}   (fortes: {b.fortes:.1f})")
-    linhas.append(f"--> Melhor sem DFS: bloco {analise.melhor_5()}")
+    linhas.append(_sugestao("Melhor sem DFS", "bloco", "blocos", analise.melhores_5()))
 
     if metodo.startswith("system_profiler"):
         linhas += [

@@ -177,7 +177,9 @@ def test_cli(monkeypatch, tmp_path, cli_isolada):
 
     assert codigo == 0
     assert len(list((tmp_path / "saida").glob("wifi_relatorio_*.txt"))) == 1
-    assert cli_isolada == [("Scan Wi-Fi terminou", "2.4 GHz: canal 1 | 5 GHz: bloco 36-48")]
+    assert cli_isolada == [
+        ("Scan Wi-Fi terminou", "2.4 GHz: canal 1 ou 11 | 5 GHz: bloco 36-48 ou 149-161")
+    ]
 
 
 def test_cli_meus_canais(monkeypatch, tmp_path, cli_isolada):
