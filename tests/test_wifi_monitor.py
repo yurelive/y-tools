@@ -65,6 +65,46 @@ def test_faz_scans_ate_o_fim(tmp_path):
     assert "Conectado em: canal 36" in resultado.relatorio
 
 
+def test_rede_conectada_entra_nos_meus_canais(tmp_path):
+    relogio = Relogio()
+    scan = [
+        Rede(canal=36, largura=80, banda="5", rssi=-41),  # a rede conectada
+        Rede(canal=11, largura=20, banda="2.4", rssi=-39),  # o 2.4 do roteador
+        Rede(canal=1, largura=20, banda="2.4", rssi=-48),  # vizinho forte
+    ]
+
+    resultado = monitorar(
+        minutos=0,
+        destino=tmp_path,
+        scanner=ScannerFake([scan]),
+        meus_canais={("2.4", 11), ("5", 149)},
+        dormir=relogio.dormir,
+        relogio=relogio,
+    )
+
+    analise = resultado.analise
+    # * o canal da conexão vence o 5:149 informado
+    assert analise.meus_canais == {("2.4", 11), ("5", 36)}
+    assert analise.proprias == {("5", 36, -41), ("2.4", 11, -39)}
+    assert {int(c.nome): c.fortes for c in analise.canais_24()}[1] == 1
+
+
+def test_sem_detectar_conectada(tmp_path):
+    relogio = Relogio()
+
+    resultado = monitorar(
+        minutos=0,
+        destino=tmp_path,
+        scanner=ScannerFake([REDES]),
+        detectar_conectada=False,
+        dormir=relogio.dormir,
+        relogio=relogio,
+    )
+
+    assert resultado.rede_atual is None
+    assert resultado.analise.meus_canais == set()
+
+
 def test_minutos_zero_faz_um_scan(tmp_path):
     relogio = Relogio()
 
@@ -138,6 +178,32 @@ def test_cli(monkeypatch, tmp_path, cli_isolada):
     assert codigo == 0
     assert len(list((tmp_path / "saida").glob("wifi_relatorio_*.txt"))) == 1
     assert cli_isolada == [("Scan Wi-Fi terminou", "2.4 GHz: canal 1 | 5 GHz: bloco 36-48")]
+
+
+def test_cli_meus_canais(monkeypatch, tmp_path, cli_isolada):
+    chamadas = {}
+
+    def monitorar_fake(**kwargs):
+        chamadas.update(kwargs)
+        return monitorar(**kwargs)
+
+    monkeypatch.setattr("y_tools.wifi.__main__.monitorar", monitorar_fake)
+    monkeypatch.setattr(
+        "y_tools.wifi.__main__.Scanner", lambda usar_corewlan: ScannerFake([REDES])
+    )
+
+    main(["--minutos", "0", "--saida", str(tmp_path), "--meus-canais", "2.4:11"])
+
+    assert chamadas["meus_canais"] == {("2.4", 11)}
+    assert chamadas["detectar_conectada"] is True
+
+
+def test_cli_meus_canais_da_env(monkeypatch):
+    monkeypatch.setenv("YTOOLS_WIFI_MEUS_CANAIS", "2.4:6")
+
+    from y_tools.wifi.__main__ import criar_parser
+
+    assert criar_parser().parse_args([]).meus_canais == {("2.4", 6)}
 
 
 def test_cli_sem_scans_retorna_erro(monkeypatch, tmp_path, cli_isolada):

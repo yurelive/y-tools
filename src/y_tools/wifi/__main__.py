@@ -6,9 +6,11 @@ Exemplos:
     python -m y_tools.wifi                    # 30 min, um scan por minuto
     python -m y_tools.wifi --minutos 0        # um scan só, na hora
     python -m y_tools.wifi -m 60 -i 30        # 1 h, um scan a cada 30 s
+    python -m y_tools.wifi --meus-canais 2.4:11
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -16,7 +18,7 @@ from dotenv import load_dotenv
 
 from ..logger import setup_logger
 from ..paths import OUTPUT_DIR
-from .analise import FORTE_DBM, PROPRIO_DBM
+from .analise import FORTE_DBM, PROPRIO_DBM, parsear_meus_canais
 from .coleta import LOGGER_NAME, Scanner
 from .monitor import (
     INTERVALO_PADRAO,
@@ -56,10 +58,22 @@ def criar_parser() -> argparse.ArgumentParser:
         help="pasta do relatório e do CSV (padrão: output/)",
     )
     parser.add_argument(
+        "--meus-canais",
+        type=parsear_meus_canais,
+        default=os.getenv("YTOOLS_WIFI_MEUS_CANAIS", ""),
+        help="canais do seu roteador, ex.: 2.4:11,5:149. O da rede conectada é detectado "
+        "sozinho; informe o da outra banda (padrão: env var YTOOLS_WIFI_MEUS_CANAIS)",
+    )
+    parser.add_argument(
+        "--nao-detectar-conectada",
+        action="store_true",
+        help="não usa a rede conectada como canal do seu roteador",
+    )
+    parser.add_argument(
         "--proprio-dbm",
         type=int,
         default=PROPRIO_DBM,
-        help=f"sinal acima disso é o seu roteador e fica de fora (padrão: {PROPRIO_DBM})",
+        help=f"sinal acima disso, no canal do roteador, é o seu roteador (padrão: {PROPRIO_DBM})",
     )
     parser.add_argument(
         "--forte-dbm",
@@ -103,6 +117,8 @@ def main(argv: list[str] | None = None) -> int:
         scanner=Scanner(usar_corewlan=not args.sem_corewlan),
         proprio_dbm=args.proprio_dbm,
         forte_dbm=args.forte_dbm,
+        meus_canais=args.meus_canais,
+        detectar_conectada=not args.nao_detectar_conectada,
     )
 
     if resultado.analise.n_scans == 0:

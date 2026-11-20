@@ -7,7 +7,7 @@ import logging
 import os
 import subprocess
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -84,6 +84,8 @@ def monitorar(
     scanner: Scanner | None = None,
     proprio_dbm: int = PROPRIO_DBM,
     forte_dbm: int = FORTE_DBM,
+    meus_canais: Iterable[tuple[str, int]] = (),
+    detectar_conectada: bool = True,
     dormir: Callable[[float], None] = time.sleep,
     relogio: Callable[[], float] = time.monotonic,
 ) -> Monitoramento:
@@ -93,6 +95,8 @@ def monitorar(
     * `minutos=0` faz um único scan.
     * Ctrl+C encerra antes da hora e ainda gera o relatório com o que foi coletado.
     * Um scan que falha é registrado no log e não derruba o monitoramento.
+    * A rede em que o Mac está conectado é a que queremos melhorar: o canal dela entra
+      sozinho em `meus_canais`, e ela fica fora da conta de interferência.
 
     Args:
         minutos: duração total.
@@ -101,6 +105,9 @@ def monitorar(
         scanner: scanner a usar. `None` cria um com o melhor método disponível.
         proprio_dbm: sinal acima disso é tratado como o seu roteador.
         forte_dbm: sinal acima disso conta como vizinho forte.
+        meus_canais: canais do seu roteador, `(banda, canal)`. Use para a banda em que o
+            Mac não está conectado (ver `parsear_meus_canais`).
+        detectar_conectada: `True` soma o canal da rede conectada a `meus_canais`.
         dormir: função de espera (substituível nos testes).
         relogio: relógio monotônico (substituível nos testes).
 
@@ -115,8 +122,26 @@ def monitorar(
     arquivo_csv = destino / f"wifi_scans_{carimbo}.csv"
     arquivo_txt = destino / f"wifi_relatorio_{carimbo}.txt"
 
-    rede_atual = _rede_atual(scanner)
-    analise = Analise(proprio_dbm=proprio_dbm, forte_dbm=forte_dbm)
+    canais = set(meus_canais)
+    rede_atual = _rede_atual(scanner) if detectar_conectada else None
+    if rede_atual is not None:
+        # * Se o usuário informou outro canal para essa banda, vale o da conexão
+        canais = {(b, c) for b, c in canais if b != rede_atual.banda}
+        canais.add((rede_atual.banda, rede_atual.canal))
+        logger.info(
+            "Conectado em %s GHz canal %d: essa rede fica fora da análise",
+            rede_atual.banda,
+            rede_atual.canal,
+        )
+
+    analise = Analise(proprio_dbm=proprio_dbm, forte_dbm=forte_dbm, meus_canais=canais)
+    for banda in analise.bandas_sem_canal():
+        logger.warning(
+            "Canal do roteador em %s GHz desconhecido: usando só o limite de %d dBm "
+            "(informe com --meus-canais)",
+            banda,
+            proprio_dbm,
+        )
     fim = relogio() + minutos * 60
 
     logger.info("Método: %s", scanner.metodo)

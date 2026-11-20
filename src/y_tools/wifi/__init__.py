@@ -25,6 +25,7 @@ from .analise import (
     formatar_relatorio,
     interfere_5,
     interfere_24,
+    parsear_meus_canais,
 )
 from .coleta import (
     LOGGER_NAME,
@@ -71,6 +72,7 @@ __all__ = [
     "monitorar",
     "notificar",
     "parsear_canal",
+    "parsear_meus_canais",
     "rede_atual_do_profiler",
     "redes_do_corewlan",
     "redes_do_profiler",

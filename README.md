@@ -145,7 +145,12 @@ Faz scans periódicos das redes Wi-Fi vizinhas (macOS), calcula quantas interfer
 canal de 2.4 GHz (1, 6, 11) e em cada bloco de 80 MHz de 5 GHz, e sugere os menos
 congestionados. Gera um relatório e o CSV bruto em `output/` e avisa com notificação no fim.
 
-* Redes com sinal acima de `-55 dBm` são tratadas como o seu próprio roteador e ficam de fora.
+* A rede em que o Mac está conectado é a que vamos melhorar: o canal dela é detectado
+  sozinho e ela fica fora da conta de interferência. Os vizinhos fortes em outros canais
+  continuam contando.
+* O Mac só enxerga o canal da banda em que está conectado. Informe o canal da outra banda
+  com `--meus-canais` (ou com `YTOOLS_WIFI_MEUS_CANAIS` no `.env`). Sem isso, nessa banda
+  qualquer rede acima de `-55 dBm` é tratada como sua.
 * A escolha prioriza evitar vizinhos fortes (acima de `-75 dBm`) e depois o total de redes.
 * Na sugestão de 5 GHz os blocos DFS (52–144) ficam de fora: o roteador sai do ar ao detectar radar.
 
@@ -178,12 +183,18 @@ python -m y_tools.wifi --minutos 0
 python -m y_tools.wifi --minutos 60 --intervalo 30
 ```
 
+```bash
+python -m y_tools.wifi --meus-canais 2.4:11
+```
+
 | Opção              | Padrão    | O que faz                                              |
 | ------------------ | --------- | ------------------------------------------------------ |
 | `-m/--minutos`     | `30`      | Duração; `0` faz um scan só                            |
 | `-i/--intervalo`   | `60`      | Segundos entre scans                                   |
 | `-o/--saida`       | `output/` | Pasta do relatório e do CSV                            |
-| `--proprio-dbm`    | `-55`     | Sinal acima disso é o seu roteador                     |
+| `--meus-canais`    | `.env`    | Canais do roteador, ex.: `2.4:11,5:149`                |
+| `--nao-detectar-conectada` | — | Não usa a rede conectada como canal do roteador  |
+| `--proprio-dbm`    | `-55`     | Sinal acima disso, no canal do roteador, é o roteador  |
 | `--forte-dbm`      | `-75`     | Sinal acima disso conta como vizinho forte             |
 | `--sem-corewlan`   | —         | Força o `system_profiler`                              |
 | `--sem-notificacao`| —         | Não mostra notificação no fim                          |

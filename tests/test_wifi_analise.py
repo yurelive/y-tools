@@ -7,6 +7,7 @@ from y_tools.wifi import (
     canais_ocupados_5,
     formatar_relatorio,
     interfere_24,
+    parsear_meus_canais,
 )
 
 
@@ -120,3 +121,62 @@ def test_formatar_relatorio():
     assert "--> Melhor: canal 1" in texto
     assert "--> Melhor sem DFS: bloco 149-161" in texto
     assert "extra `wifi`" in texto
+
+
+@pytest.mark.parametrize(
+    "texto, esperado",
+    [
+        ("", set()),
+        ("2.4:11,5:149", {("2.4", 11), ("5", 149)}),
+        (" 2.4GHz:1 , 5ghz:36 ", {("2.4", 1), ("5", 36)}),
+        ("2:6", {("2.4", 6)}),
+        ("11,149", {("2.4", 11), ("5", 149)}),
+    ],
+)
+def test_parsear_meus_canais(texto, esperado):
+    assert parsear_meus_canais(texto) == esperado
+
+
+@pytest.mark.parametrize("texto", ["2.4:onze", "7:11", "5:"])
+def test_parsear_meus_canais_invalido(texto):
+    with pytest.raises(ValueError, match="inválido"):
+        parsear_meus_canais(texto)
+
+
+def test_canal_conhecido_so_ignora_a_rede_forte_nele():
+    analise = Analise(meus_canais={("2.4", 11)})
+    analise.adicionar(
+        [
+            r24(11, rssi=-39),  # o roteador
+            r24(11, rssi=-80),  # vizinho fraco no mesmo canal: conta
+            r24(1, rssi=-48),  # vizinho forte em outro canal: conta
+        ]
+    )
+
+    canais = {int(c.nome): c for c in analise.canais_24()}
+    assert analise.proprias == {("2.4", 11, -39)}
+    assert canais[11].media == 1
+    assert canais[1].media == 1
+    assert canais[1].fortes == 1
+
+
+def test_banda_sem_canal_conhecido_usa_o_limite():
+    analise = Analise(meus_canais={("5", 149)})
+    analise.adicionar([r24(1, rssi=-48), r5(36, rssi=-48)])
+
+    assert analise.bandas_sem_canal() == ["2.4"]
+    assert analise.proprias == {("2.4", 1, -48)}
+    assert {b.nome: b.media for b in analise.blocos_5()}["36-48"] == 1
+
+
+def test_relatorio_agrupa_sinais_e_avisa_banda_sem_canal():
+    analise = Analise(meus_canais={("5", 149)})
+    analise.adicionar([r5(149, rssi=-45)])
+    analise.adicionar([r5(149, rssi=-37)])
+
+    texto = formatar_relatorio(analise, "fake", 1)
+
+    assert "Canais do seu roteador: 5 GHz canal 149" in texto
+    assert "5 GHz canal 149 (-45 a -37 dBm)" in texto
+    assert "2.4 GHz sem canal conhecido" in texto
+    assert "5 GHz sem canal conhecido" not in texto

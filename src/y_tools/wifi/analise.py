@@ -6,7 +6,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
-from .coleta import Rede
+from .coleta import Rede, banda_por_canal
 
 CANAIS_24 = (1, 6, 11)
 """Canais de 2.4 GHz que não se sobrepõem — os únicos que vale a pena escolher."""
@@ -22,10 +22,39 @@ BLOCOS_5 = {
 """Blocos de 80 MHz em 5 GHz. DFS pode ser derrubado por radar, então é evitado na sugestão."""
 
 PROPRIO_DBM = -55
-"""Sinal mais forte que isso = quase certamente o seu próprio roteador (fica de fora)."""
+"""Sinal mais forte que isso, no canal do seu roteador, é o próprio roteador (fica de fora)."""
 
 FORTE_DBM = -75
 """Vizinho com sinal mais forte que isso atrapalha de verdade."""
+
+
+def parsear_meus_canais(texto: str) -> set[tuple[str, int]]:
+    """
+    Interpreta os canais do seu roteador, ex.: `"2.4:11,5:149"`.
+
+    * Um número sem banda (`"11"`) tem a banda deduzida pelo canal.
+
+    Args:
+        texto: pares `banda:canal` separados por vírgula. Vazio devolve conjunto vazio.
+
+    Returns:
+        Conjunto de `(banda, canal)`.
+
+    Raises:
+        ValueError: se algum item não estiver no formato esperado.
+    """
+
+    canais = set()
+    for item in filter(None, (p.strip() for p in texto.split(","))):
+        banda, _, canal = item.rpartition(":")
+        banda = banda.strip().lower().removesuffix("ghz").strip()
+        if banda == "2":
+            banda = "2.4"
+        if not canal.strip().isdigit() or banda not in {"", "2.4", "5", "6"}:
+            raise ValueError(f"Canal inválido: {item!r} (use banda:canal, ex.: 2.4:11,5:149)")
+        numero = int(canal)
+        canais.add((banda or banda_por_canal(numero), numero))
+    return canais
 
 
 def centro_24(rede: Rede) -> int:
@@ -118,15 +147,51 @@ class Congestionamento:
 
 @dataclass
 class Analise:
-    """Acumula vários scans e calcula o congestionamento médio de cada canal/bloco."""
+    """
+    Acumula vários scans e calcula o congestionamento médio de cada canal/bloco.
+
+    * O seu próprio roteador não conta como interferência. Numa banda com o canal do
+      roteador conhecido (`meus_canais`), só fica de fora a rede forte nesse canal;
+      vizinhos fortes em outros canais continuam contando. Numa banda sem canal
+      conhecido, qualquer rede acima de `proprio_dbm` fica de fora.
+    """
 
     proprio_dbm: int = PROPRIO_DBM
     forte_dbm: int = FORTE_DBM
+    meus_canais: set[tuple[str, int]] = field(default_factory=set)
+    """Canais do seu roteador: `(banda, canal)`."""
     n_scans: int = 0
     soma: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     soma_fortes: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     proprias: set[tuple[str, int, int]] = field(default_factory=set)
-    """Redes ignoradas por serem fortes demais: `(banda, canal, rssi)`."""
+    """Redes ignoradas por serem do seu roteador: `(banda, canal, rssi)`."""
+
+    def bandas_sem_canal(self) -> list[str]:
+        """
+        Bandas analisadas (2.4 e 5 GHz) cujo canal do roteador não é conhecido.
+
+        Returns:
+            Bandas que usam só o limite de sinal para achar o roteador.
+        """
+
+        conhecidas = {banda for banda, _ in self.meus_canais}
+        return [b for b in ("2.4", "5") if b not in conhecidas]
+
+    def e_propria(self, rede: Rede) -> bool:
+        """
+        Diz se a rede é do seu próprio roteador.
+
+        Args:
+            rede: rede vista no scan.
+
+        Returns:
+            `True` se ela deve ficar fora da análise.
+        """
+
+        if rede.rssi is None or rede.rssi <= self.proprio_dbm:
+            return False
+        canais = {c for banda, c in self.meus_canais if banda == rede.banda}
+        return not canais or rede.canal in canais
 
     def _forte(self, rede: Rede) -> bool:
         """`True` se a vizinha tem sinal acima de `forte_dbm`."""
@@ -152,7 +217,7 @@ class Analise:
 
         self.n_scans += 1
         for rede in redes:
-            if rede.rssi is not None and rede.rssi > self.proprio_dbm:
+            if self.e_propria(rede):
                 self.proprias.add((rede.banda, rede.canal, rede.rssi))
                 continue
             if rede.banda == "2.4":
@@ -218,6 +283,14 @@ class Analise:
         return min(candidatos, key=lambda b: (b.fortes, b.media)).nome
 
 
+def _faixa(banda: str, canal: int, sinais: list[int]) -> str:
+    """Formata uma rede ignorada com a faixa de sinal vista, ex.: `5 GHz canal 149 (-45 a -37 dBm)`."""
+
+    menor, maior = min(sinais), max(sinais)
+    faixa = f"{menor} dBm" if menor == maior else f"{menor} a {maior} dBm"
+    return f"{banda} GHz canal {canal} ({faixa})"
+
+
 def _chave_24(canal: int) -> str:
     """Chave interna de um canal de 2.4 GHz nos contadores."""
 
@@ -253,12 +326,19 @@ def formatar_relatorio(
             f"{rede_atual.largura} MHz{sinal})"
         )
 
-    linhas += ["", f"Ignoradas (provavelmente o SEU roteador, sinal > {analise.proprio_dbm} dBm):"]
-    proprias = sorted(analise.proprias, key=lambda p: (p[0], p[1], p[2]))
-    linhas.append(
-        "  "
-        + (", ".join(f"{b} GHz canal {c} ({s} dBm)" for b, c, s in proprias) or "nenhuma")
-    )
+    meus = ", ".join(f"{b} GHz canal {c}" for b, c in sorted(analise.meus_canais))
+    linhas.append(f"Canais do seu roteador: {meus or 'desconhecidos'}")
+    for banda in analise.bandas_sem_canal():
+        linhas.append(
+            f"  ! {banda} GHz sem canal conhecido: toda rede acima de {analise.proprio_dbm} dBm "
+            f"foi tratada como sua (informe com --meus-canais)"
+        )
+
+    linhas += ["", f"Ignoradas (seu roteador, sinal > {analise.proprio_dbm} dBm):"]
+    sinais: dict[tuple[str, int], list[int]] = defaultdict(list)
+    for banda, canal, rssi in analise.proprias:
+        sinais[(banda, canal)].append(rssi)
+    linhas.append("  " + (", ".join(_faixa(b, c, s) for (b, c), s in sorted(sinais.items())) or "nenhuma"))
 
     linhas += ["", "=== 2.4 GHz: média de redes vizinhas interferindo ==="]
     for c in analise.canais_24():
