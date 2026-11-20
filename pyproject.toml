@@ -15,6 +15,10 @@ transcricao = [
   # ! av 19 removeu `metadata_errors` de av.open, ainda usado pelo faster-whisper 1.2.x
   "av<19",
 ]
+wifi = [
+  # * CoreWLAN dá o sinal (RSSI) real das vizinhas; sem ele a tool usa o system_profiler
+  "pyobjc-framework-CoreWLAN; sys_platform == 'darwin'",
+]
 notebooks = [
   "ipykernel",
   "ipywidgets",

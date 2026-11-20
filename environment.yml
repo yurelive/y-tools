@@ -7,5 +7,5 @@ dependencies:
   - pip
   - pip:
       # pacote em modo editável, com as dependências de todas as tools e dos notebooks
-      - -e .[transcricao,notebooks]
+      - -e .[transcricao,wifi,notebooks]
       - -r requirements-dev.txt
